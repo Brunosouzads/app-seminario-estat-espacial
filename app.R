@@ -51,7 +51,7 @@ sf_data_joined <- dados %>%
 
 
 ui<-fluidPage(
-  titlePanel("Mapas do PIB per Capita e IDH do estado do RS (IBGE 2021)"),
+  titlePanel("Dados sobre a População do estado do RS (IBGE 2021)"),
   sidebarLayout(
     sidebarPanel(
       selectInput("map_type", "Escolha o tipo de mapa:",
@@ -68,7 +68,7 @@ ui<-fluidPage(
       actionButton("Atualizar", "Atualizar", class = "btn btn-primary")
     ),
     mainPanel(
-      leafletOutput('plot')
+      leafletOutput('plot',width = "100%", height = 800)
     )
   )
 )
