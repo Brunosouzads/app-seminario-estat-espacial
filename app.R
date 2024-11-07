@@ -8,7 +8,6 @@ library(openxlsx)
 library(leaflet)
 library(viridis)
 library(stringr)
-library(geobr)
 
 # Lê os dados do mapa e das variáveis de interesse
 dados <- st_read("RS_Municipios_2022.shp")
@@ -36,6 +35,8 @@ dados1$municipio <- tolower(trimws(dados1$municipio))
 dados$municipio <- tolower(trimws(dados$NM_MUN)) 
 dados$municipio <- str_to_title(dados$municipio) 
 dados1$municipio <- str_to_title(dados1$municipio) 
+dados$Codigo <- dados$CD_MUN
+dados1$Codigo <- as.character(dados1$Codigo)
 
 # Transforma para WGS84 se necessário
 if (st_crs(dados)$epsg != 4326) {
@@ -51,7 +52,7 @@ sf_data_joined <- dados %>%
 
 
 ui<-fluidPage(
-  titlePanel("Dados sobre a População do estado do RS (IBGE 2021)"),
+  titlePanel("Dados sobre a População do estado do RS (IBGE 2022)"),
   sidebarLayout(
     sidebarPanel(
       selectInput("map_type", "Escolha o tipo de mapa:",
@@ -61,8 +62,8 @@ ui<-fluidPage(
                               "Densidade Demográfica" = "Densidade",
                               "Escolarização dos 6 aos 14 anos" = "Escolarizacao")),
       sliderInput('pib','PIB per capita',min = 0, max = 450000, value = c(0,450000)),
-      sliderInput('idh','IDH',min = 0, max = 0.9, value = c(0,0.9)),
-      sliderInput('pop','População',min = 1000, max = 140000, value = c(1000,140000)),
+      sliderInput('idh','IDH',min = 0, max = 1, value = c(0,1)),
+      sliderInput('pop','População',min = 1000, max = 1400000, value = c(1000,1400000)),
       sliderInput('ddemo','Densidade Demográfica',min = 1, max = 3200, value = c(1,3200)),
       sliderInput('escol','Escolarização 6 - 14',min = 80, max = 100, value = c(80,100)),
       actionButton("Atualizar", "Atualizar", class = "btn btn-primary")
@@ -111,7 +112,12 @@ server <- function(input, output) {
     )
       })
     
-    
+    df2 = sf_data_joined %>%
+      subset(PIB_per_capita >= input$pib[1] & PIB_per_capita <= input$pib[2] & 
+               IDH >= input$idh[1] & IDH <= input$idh[2] &
+               populacao_residente >= input$pop[1] & populacao_residente <= input$pop[2] &
+               densidade_demografica >= input$ddemo[1] & densidade_demografica <= input$ddemo[2] &
+               escolarizacao_6a14 >= input$escol[1] & escolarizacao_6a14 <= input$escol[2])
     
     var_name <- input$map_type  # Obtém o nome da variável em minúsculas
     
@@ -140,8 +146,8 @@ server <- function(input, output) {
         fillOpacity = 0.7,
         highlightOptions = highlightOptions(weight = 2, color = "white", fillOpacity = 0.7),
         label = sprintf("Município: %s PIB per Capita: %s \nIDH: %s \nPopulação: %s \nDensidade Demográfica: %s", 
-                        sf_data_joined$municipio, sf_data_joined$PIB_per_capita, sf_data_joined$IDH, 
-                        sf_data_joined$populacao_residente, sf_data_joined$densidade_demografica)) %>%
+                        df2$municipio, df2$PIB_per_capita, df2$IDH, 
+                        df2$populacao_residente, df2$densidade_demografica)) %>%
       addLegend(pal = pal, 
                 values = ~label_var, 
                 title = input$map_type, 
